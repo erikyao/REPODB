@@ -8,7 +8,7 @@
     },
     "dumper": {
         "data_url": [
-            "https://unmtid-shinyapps.net/shiny/repodb/session/caae90d1fdad1cd18dc1ac8736a990ab/download/downloadFull?w="
+            "http://localhost:8081/dataupload/mysrc/full.csv"
         ],
         "uncompress": false,
         "release": "version:get_release",
