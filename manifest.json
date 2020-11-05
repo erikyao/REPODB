@@ -8,7 +8,7 @@
     },
     "dumper": {
         "data_url": [
-            "http://localhost:8081/dataupload/mysrc/full.csv"
+            "http://localhost:8081/dataupload/src/full.csv"
         ],
         "uncompress": false,
         "release": "version:get_release",
