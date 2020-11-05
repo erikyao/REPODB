@@ -1,0 +1,20 @@
+{
+    "version": "0.1",
+    "__metadata__": {
+        "license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "licence": "Creative Commons Attribution 4.0 International License",
+        "url": "https://unmtid-shinyapps.net/shiny/repodb/"
+    },
+    "dumper": {
+        "data_url": [
+            "https://unmtid-shinyapps.net/shiny/repodb/session/caae90d1fdad1cd18dc1ac8736a990ab/download/downloadFull?w="
+        ],
+        "uncompress": false,
+        "release": "version:get_release",
+        "schedule": "0 0 * * 1"
+    },
+    "uploader": {
+        "parser": "parser:load_data",
+        "on_duplicates": "error"
+    }
+}
