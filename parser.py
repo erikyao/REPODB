@@ -5,7 +5,7 @@ import pandas as pd
 This script parses entries of the repoDB csv file (named `full.csv`) and 
 outputs documents as SmartAPI requires.
 
-Each document represent a unique drug using drugbank id as primary key (`_id`).
+Each document represents a unique drug using drugbank id as primary key (`_id`).
 One drug may have multiple indications, and these indications will be grouped into one document.
 
 See https://github.com/SmartAPI/smartAPI/issues/85 for more details.
@@ -57,9 +57,9 @@ class IndicationEntry:
         self.status = series.status
         self.phase = series.phase
 
-        # Some entries will have a line break following 4 spaces inside its `DetailedStatus` field; 
+        # Some entries will have a line break followed by 4 spaces inside its `DetailedStatus` field
         # Here we replace such a sequence with a single space
-        self.detailed_status = series.DetailedStatus.replace("\n    ", " ") 
+        self.detailed_status = series.DetailedStatus.replace("\n    ", " ")
 
 class DrugEntry:
     def __init__(self, drugbank_id, drug_name):
@@ -70,32 +70,32 @@ class DrugEntry:
 class RepoDBDoc:
     def __init__(self, drug_entry, indication_entries):
         """
-        A RepoDB doc is composed from a drug entry and a list of indication entries.
+        A RepoDB doc is composed of a drug entry and a list of indication entries.
 
         Args:
             drug_entry (DrugEntry): a DrugEntry object
-            indication_entries (list): a list of IndicationEntry objects 
+            indication_entries (list): a list of IndicationEntry objects
         """
         self.drug = drug_entry
         self.indications = indication_entries
 
     def to_dict(self):
         """Represent the RepoDB document as a dictionary."""
-        repodb_dict = {
-            "drugbank": self.drug.id,
-            "name": self.drug.name,
-            "indications": [vars(ind) for ind in self.indications]  # `vars(obj)` is equivalent to `obj.__dict__`
-        }
-
         ret_dict = {
             "_id": self.drug.id,
-            "repodb": repodb_dict
+            "repodb": {
+                "drugbank": self.drug.id,
+                "name": self.drug.name,
+                "indications": [vars(ind) for ind in self.indications]  # `vars(obj)` is equivalent to `obj.__dict__`
+            }
         }
 
         return ret_dict
 
 def load_data(data_folder):
     repoDB_file = os.path.join(data_folder, "full.csv")
+
+    # "NA" strings in the csv will be preserved instead of being converted to `np.nan`
     repoDB_df = pd.read_csv(repoDB_file, na_filter=False)
 
     for drug_tuple, indication_dataframe in repoDB_df.groupby(["drugbank_id", "drug_name"], as_index=False):
