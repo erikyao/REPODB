@@ -221,8 +221,11 @@ def revise_drugbank_name(repoDB_df):
     id_name_map = batch_query_drugbank_names(drugbank_ids)
 
     for _, row in repoDB_df.iterrows():
-        if row.drugbank_id in id_name_map:
-            row.drug_name = id_name_map[row.drugbank_id]
+        # If `row.drugbank_id` is not a key in `id_name_map`, `new_drug_name` is set None;
+        # otherwise `new_drug_name` is the mapped drug name (which could be None)
+        new_drug_name = id_name_map.get(row.drugbank_id, None)
+        if new_drug_name is not None:
+            row.drug_name = new_drug_name
 
     assert is_one_to_one(repoDB_df, "drug_name", "drugbank_id"), "drug_name and drugbank_id are not 1-to-1 after manipulation"
 
