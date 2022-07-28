@@ -12,8 +12,7 @@
             "http://localhost:8080/dataupload/mysrc/full.csv"
         ],
         "uncompress": false,
-        "release": "version:get_release",
-        "schedule": "0 0 * * 1"
+        "release": "version:get_release"
     },
     "uploader": {
         "parser": "parser:load_data",
