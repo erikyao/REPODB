@@ -55,50 +55,6 @@ The expected output is:
 ############################################
 
 
-def query_drugbank_name(drugbank_id):
-    """
-    Find the drugbank name of the input `drugbank_id`
-    See https://docs.mychem.info/en/latest/doc/chem_annotation_service.html#get-request for the specification of the API
-
-    Args:
-        drugbank_id (str): a drugbank ID like "DB00002"
-
-    Returns:
-        drugbank_name (str): a drugbank name like 'Cetuximab' or None if not found
-    """
-    url = 'http://mychem.info/v1/chem/{}'.format(drugbank_id)
-    params = {"fields": "drugbank.name"}
-    response = requests.get(url, params=params)  # GET method required
-
-    # raise an HTTPError if the HTTP request returned an unsuccessful status code
-    response.raise_for_status()
-
-    json_response = response.json()
-
-    """
-    E.g. the json response of http://mychem.info/v1/chem/DB00002?fields=drugbank.name is
-
-    ```
-    {
-        "_id": "DB00002",
-        "_version": 1,
-        "drugbank": {"_license": "http://bit.ly/2PSfZTD", "name": "Cetuximab"}
-    }
-    ```
-
-    The json response of http://mychem.info/v1/chem/DB12430?fields=drugbank.name is
-
-    ```
-    {"code": 404, "success": false, "error": "ID 'DB12430' not found"}
-    ```
-    """
-    if "drugbank" not in json_response:
-        return None
-
-    drugbank_name = json_response["drugbank"]["name"]
-    return drugbank_name
-
-
 def _query_drugbank_names(drugbank_ids):
     """
     Find the drugbank names of the input `drugbank_ids`
@@ -138,7 +94,7 @@ def _query_drugbank_names(drugbank_ids):
     ]
     ```
     """
-    id_name_map = {entry["query"]: (entry["drugbank"]["name"] if "drugbank" in entry else None) 
+    id_name_map = {entry["query"]: (entry["drugbank"]["name"] if "drugbank" in entry else None)
                    for entry in json_response}
 
     return id_name_map
