@@ -5,8 +5,7 @@ import requests
 
 
 """
-This script parses entries of the repoDB csv file (named `full.csv`) and
-outputs documents as SmartAPI requires.
+This script parses entries of the repoDB csv file (named `full.csv`) and outputs documents as SmartAPI requires.
 
 Each document represents a unique drug using drugbank id as primary key (`_id`).
 One drug may have multiple indications, and these indications will be grouped into one document.
@@ -55,6 +54,7 @@ The expected output is:
 # Part 1 - Client to query mychem.info API #
 ############################################
 
+
 def query_drugbank_name(drugbank_id):
     """
     Find the drugbank name of the input `drugbank_id`
@@ -97,6 +97,7 @@ def query_drugbank_name(drugbank_id):
 
     drugbank_name = json_response["drugbank"]["name"]
     return drugbank_name
+
 
 def _query_drugbank_names(drugbank_ids):
     """
@@ -142,12 +143,13 @@ def _query_drugbank_names(drugbank_ids):
 
     return id_name_map
 
+
 def batch_query_drugbank_names(drugbank_ids, batch_size=1000):
     """
     Find the drugbank names of the input `drugbank_ids` by batches.
     See https://docs.mychem.info/en/latest/doc/chem_annotation_service.html#batch-queries-via-post for the specification of the API
     The API has a payload limit that at most 1000 IDs can be posted in one query.
-    Therefore if `len(drugbank_ids)` is greater than 1000, this function will partition the ID list into batches, 
+    Therefore if `len(drugbank_ids)` is greater than 1000, this function will partition the ID list into batches,
     call the API multiple times, and merge the results.
 
     Args:
@@ -169,15 +171,16 @@ def batch_query_drugbank_names(drugbank_ids, batch_size=1000):
 # Part 2 - Util to revise the repoDB csv #
 ##########################################
 
-def revise_drugbank_name(repoDB_df):
+
+def revise_drugbank_name(repodb_df):
     """
     Revise the drugbank name of the original repoDB csv.
 
     Args:
-        repoDB_df (pandas.DataFrame): the original dataframe from the repoDB csv
+        repodb_df (pandas.DataFrame): the original dataframe from the repoDB csv
 
     Returns:
-        repoDB_df (pandas.DataFrame): the revised dataframe
+        repodb_df (pandas.DataFrame): the revised dataframe
     """
 
     """
@@ -217,19 +220,20 @@ def revise_drugbank_name(repoDB_df):
             - If the original `drug_name` is NA or not unique, manipulate manually
     """
 
-    drugbank_ids = repoDB_df.drugbank_id.unique()
+    drugbank_ids = repodb_df.drugbank_id.unique()
     id_name_map = batch_query_drugbank_names(drugbank_ids)
 
-    for _, row in repoDB_df.iterrows():
+    for _, row in repodb_df.iterrows():
         # If `row.drugbank_id` is not a key in `id_name_map`, `new_drug_name` is set None;
         # otherwise `new_drug_name` is the mapped drug name (which could be None)
         new_drug_name = id_name_map.get(row.drugbank_id, None)
         if new_drug_name is not None:
             row.drug_name = new_drug_name
 
-    assert is_one_to_one(repoDB_df, "drug_name", "drugbank_id"), "drug_name and drugbank_id are not 1-to-1 after manipulation"
+    assert is_one_to_one(repodb_df, "drug_name", "drugbank_id"), "drug_name and drugbank_id are not 1-to-1 after manipulation"
 
-    return repoDB_df
+    return repodb_df
+
 
 def is_one_to_one(df, col1, col2):
     """
@@ -260,6 +264,7 @@ def is_one_to_one(df, col1, col2):
 # Part 3 - Parser of the repoDB csv #
 #####################################
 
+
 class IndicationEntry:
     def __init__(self, series):
         """Init an indication entry from a pandas Series object."""
@@ -273,13 +278,15 @@ class IndicationEntry:
         # Here we replace such a sequence with a single space
         self.detailed_status = series.DetailedStatus.replace("\n    ", " ")
 
+
 class DrugEntry:
     def __init__(self, drugbank_id, drug_name):
         """Init a drug entry with 2 fields, `drugbank_id` and `drug_name`."""
         self.id = drugbank_id
         self.name = drug_name
 
-class RepoDBDoc:
+
+class RepodbDoc:
     def __init__(self, drug_entry, indication_entries):
         """
         A RepoDB doc is composed of a drug entry and a list of indication entries.
@@ -304,20 +311,21 @@ class RepoDBDoc:
 
         return ret_dict
 
+
 def load_data(data_folder):
-    repoDB_file = os.path.join(data_folder, "full.csv")
+    repodb_file = os.path.join(data_folder, "full.csv")
 
     # "NA" strings in the csv will be preserved instead of being converted to `np.nan`
-    repoDB_df = pd.read_csv(repoDB_file, na_filter=False)
+    repodb_df = pd.read_csv(repodb_file, na_filter=False)
 
     # Revise the drugbank name of the original repoDB csv.
-    repoDB_df = revise_drugbank_name(repoDB_df)
+    repodb_df = revise_drugbank_name(repodb_df)
 
-    for drug_tuple, indication_dataframe in repoDB_df.groupby(["drugbank_id", "drug_name"], as_index=False):
+    for drug_tuple, indication_dataframe in repodb_df.groupby(["drugbank_id", "drug_name"], as_index=False):
         # each group key is transformed into a drug entry
         drug_entry = DrugEntry(*drug_tuple)
         # each indication inside a certain group is transformed into an Indication Entry
         indication_entries = [IndicationEntry(series) for _, series in indication_dataframe.iterrows()]
 
-        repoDB_doc = RepoDBDoc(drug_entry, indication_entries)
-        yield repoDB_doc.to_dict()
+        repodb_doc = RepodbDoc(drug_entry, indication_entries)
+        yield repodb_doc.to_dict()
