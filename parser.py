@@ -51,84 +51,37 @@ The expected output is:
 """
 
 ############################################
-# Part 1 - Client to query mychem.info API #
+# Part 1 - Client to read DrugBank CSV     #
 ############################################
 
+def process_drugbank_csv(data_folder):
+  """
+  Reads open source DrugBank CSV to get names for DrugBank IDs
 
-def _query_drugbank_names(drugbank_ids):
-    """
-    Find the drugbank names of the input `drugbank_ids`
-    See https://docs.mychem.info/en/latest/doc/chem_annotation_service.html#batch-queries-via-post for the specification of the API
-    This is a private function that ignores the payload limit (1000 IDs at most in one query)
+  Args:
+      data_folder (str): the path where data files are stored
 
-    Args:
-        drugbank_ids (list): a list of drugbank IDs like ["DB00002", "DB01234"]
-
-    Returns:
-        id_name_map (dict): a mapping of drugbank ids and names like {'DB00002': 'Cetuximab', 'DB01234': 'Dexamethasone'}
-    """
-    url = 'http://mychem.info/v1/chem'
-    data = {"ids": ",".join(drugbank_ids), "fields": "drugbank.name"}
-    response = requests.post(url, data=data)  # POST method required
-
-    # raise an HTTPError if the HTTP request returned an unsuccessful status code
-    response.raise_for_status()
-
-    json_response = response.json()
-
-    """
-    E.g. the json response when querying `["DB00002", "DB12430"]` is
-
-    ```
-    [
-        {
-            'query': 'DB00002',
-            '_id': 'DB00002',
-            '_version': 1,
-            'drugbank': {'_license': 'http://bit.ly/2PSfZTD', 'name': 'Cetuximab'}
-        },
-        {
-            'query': 'DB12430',
-            'notfound': True
-        }
-    ]
-    ```
-    """
-    id_name_map = {entry["query"]: (entry["drugbank"]["name"] if "drugbank" in entry else None)
-                   for entry in json_response}
-
-    return id_name_map
-
-
-def batch_query_drugbank_names(drugbank_ids, batch_size=1000):
-    """
-    Find the drugbank names of the input `drugbank_ids` by batches.
-    See https://docs.mychem.info/en/latest/doc/chem_annotation_service.html#batch-queries-via-post for the specification of the API
-    The API has a payload limit that at most 1000 IDs can be posted in one query.
-    Therefore if `len(drugbank_ids)` is greater than 1000, this function will partition the ID list into batches,
-    call the API multiple times, and merge the results.
-
-    Args:
-        drugbank_ids (list): a list of drugbank IDs like ["DB00002", "DB01234"]
-
-    Returns:
-        id_name_map (dict): a mapping of drugbank ids and names like {'DB00002': 'Cetuximab', 'DB01234': 'Dexamethasone'}
-    """
-    if batch_size is None or len(drugbank_ids) <= batch_size:
-        return _query_drugbank_names(drugbank_ids)
-
-    drugbank_id_batches = [drugbank_ids[i:i+batch_size] for i in range(0, len(drugbank_ids), batch_size)]
-    id_name_map_batches = [_query_drugbank_names(id_batch) for id_batch in drugbank_id_batches]
-
-    id_name_map = dict(ChainMap(*id_name_map_batches))
-    return id_name_map
+  Returns:
+      id_name_map (dict[str, str]): a mapping of DrugBank ids to names
+  """
+  with open(os.path.join(data_folder, 'drugbank vocabulary.csv'), encoding='utf-8') as f:
+    data = [line.strip().split(',') for line in f.readlines()][1:] # exclude first line (headings)
+  
+  id_name_map = {}
+  for entry in data:
+    ids = [entry[0], *entry[1].split(' | ')]
+    for i in ids:
+      id_name_map[i] = entry[2]
+  
+  return id_name_map
+  
 
 ##########################################
 # Part 2 - Util to revise the repoDB csv #
 ##########################################
 
 
-def revise_drugbank_name(repodb_df):
+def revise_drugbank_name(repodb_df, id_name_map):
     """
     Revise the drugbank name of the original repoDB csv.
 
@@ -177,7 +130,6 @@ def revise_drugbank_name(repodb_df):
     """
 
     drugbank_ids = repodb_df.drugbank_id.unique()
-    id_name_map = batch_query_drugbank_names(drugbank_ids)
 
     for _, row in repodb_df.iterrows():
         # If `row.drugbank_id` is not a key in `id_name_map`, `new_drug_name` is set None;
@@ -186,10 +138,34 @@ def revise_drugbank_name(repodb_df):
         if new_drug_name is not None:
             row.drug_name = new_drug_name
 
-    assert is_one_to_one(repodb_df, "drug_name", "drugbank_id"), "drug_name and drugbank_id are not 1-to-1 after manipulation"
+    assert is_injective(repodb_df, "drugbank_id", "drug_name"), "drugbank_id has multiple drug_names after manipulation"
 
     return repodb_df
 
+def is_injective(df, col1, col2):
+    """
+    Check if two columns are injective in a dataframe.
+
+    A injective relation between two columns is like (same with the injective in functions):
+
+    | col1 | col2      |
+    |------|-----------|
+    | a    | apple     |
+    | b    | banana    |
+    | c    | cranberry |
+    | r    | cranberry |
+
+    Args:
+        df (pandas.DataFrame): a pandas dataframe
+        col1 (str): name of the 1st column
+        col2 (str): name of the 2nd column
+    Returns:
+        result (boolean): True if injective otherwise False
+    """
+    df = df.drop_duplicates(subset=[col1, col2])
+    is_injective = (df.groupby(col1)[col2].count().max() == 1)
+
+    return is_injective
 
 def is_one_to_one(df, col1, col2):
     """
@@ -269,13 +245,15 @@ class RepodbDoc:
 
 
 def load_data(data_folder):
+    id_name_map = process_drugbank_csv(data_folder)
+
     repodb_file = os.path.join(data_folder, "full.csv")
 
     # "NA" strings in the csv will be preserved instead of being converted to `np.nan`
     repodb_df = pd.read_csv(repodb_file, na_filter=False)
 
     # Revise the drugbank name of the original repoDB csv.
-    repodb_df = revise_drugbank_name(repodb_df)
+    repodb_df = revise_drugbank_name(repodb_df, id_name_map)
 
     for drug_tuple, indication_dataframe in repodb_df.groupby(["drugbank_id", "drug_name"], as_index=False):
         # each group key is transformed into a drug entry
