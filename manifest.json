@@ -9,9 +9,10 @@
     },
     "dumper": {
         "data_url": [
-            "http://localhost:8080/dataupload/mysrc/full.csv"
+            "http://localhost:8080/dataupload/mysrc/full.csv",
+            "https://go.drugbank.com/releases/5-1-9/downloads/all-drugbank-vocabulary"
         ],
-        "uncompress": false,
+        "uncompress": true,
         "release": "version:get_release"
     },
     "uploader": {
