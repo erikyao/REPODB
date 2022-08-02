@@ -1,6 +1,6 @@
 # Data Plugin
 
-This repo is the Biothings plugin for [repoDB](https://unmtid-shinyapps.net/shiny/repodb/) _v2.0-SNAPSHOT_ data ([download page](https://unmtid-shinyapps.net/shiny/repodb/)). The requirements were discussed in [smartAPI - Issue#85](https://github.com/SmartAPI/smartAPI/issues/85).
+This repo is the Biothings plugin for [repoDB](https://unmtid-shinyapps.net/shiny/repodb/) _v2.0-SNAPSHOT_ data. The requirements were discussed in [smartAPI - Issue#85](https://github.com/SmartAPI/smartAPI/issues/85).
 
 A sample document for `Brolucizumab` is shown below:
 
@@ -34,7 +34,7 @@ The problem with downloading `full.csv` is that, every time the download button 
 https://unmtid-shinyapps.net/shiny/repodb/session/9f5dcbef21859438b1c0cea784bde839/download/downloadFull?w=
 ```
 
-We are not clear if the session id would expire or become invalid, so we chose not to use this kind of direct download link the manifest.json.
+We are not clear if the session id would expire or become invalid, so we chose not to use this kind of direct download links in the manifest.json.
 
 For the drugbank vocabulary, the direct download link `https://go.drugbank.com/releases/5-1-9/downloads/all-drugbank-vocabulary` works well for browser users. It will be redirected to an Amazon S3 link like: 
 
