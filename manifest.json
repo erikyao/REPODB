@@ -10,7 +10,7 @@
     "dumper": {
         "data_url": [
             "http://localhost:8080/dataupload/mysrc/full.csv",
-            "https://go.drugbank.com/releases/5-1-9/downloads/all-drugbank-vocabulary"
+            "http://localhost:8080/dataupload/mysrc/drugbank vocabulary.csv"
         ],
         "uncompress": true,
         "release": "version:get_release"
