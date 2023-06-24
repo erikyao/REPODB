@@ -9,8 +9,8 @@
     },
     "dumper": {
         "data_url": [
-            "http://localhost:8080/dataupload/mysrc/full.csv",
-            "http://localhost:8080/dataupload/mysrc/drugbank vocabulary.csv"
+            "http://localhost:8080/dataupload/mysrc/repoDB/full.csv",
+            "http://localhost:8080/dataupload/mysrc/repoDB/drugbank vocabulary.csv"
         ],
         "uncompress": true,
         "release": "version:get_release"
